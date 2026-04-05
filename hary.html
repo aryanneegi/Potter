@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horcrux Hunt — 30 Levels</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #06040a;
+  color: #e8d5b0;
+  font-family: 'Lora', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#stars {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 0; overflow: hidden;
+}
+
+.star {
+  position: absolute; width: 2px; height: 2px;
+  background: #e8d5b0; border-radius: 50%;
+  animation: twinkle 3s infinite alternate;
+}
+
+@keyframes twinkle { from { opacity: 0.1; } to { opacity: 0.85; } }
+
+#game {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* HEADER */
+#header {
+  text-align: center;
+  padding: 18px 0 14px;
+  border-bottom: 1px solid #3a1f2e;
+  margin-bottom: 18px;
+}
+
+#header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 30px; font-weight: 700;
+  color: #c9973a;
+  letter-spacing: 3px;
+  text-shadow: 0 0 24px rgba(201,151,58,0.5);
+}
+
+#header p { font-size: 13px; color: #7a6040; margin-top: 5px; font-style: italic; }
+
+/* STATUS BAR */
+#status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(20,10,15,0.85);
+  border: 1px solid #2a1520;
+  border-radius: 8px; padding: 10px 16px;
+  margin-bottom: 14px;
+  font-family: 'Cinzel', serif; font-size: 11px; color: #6a5040;
+  flex-wrap: wrap; gap: 8px;
+}
+
+.status-item { display: flex; align-items: center; gap: 6px; }
+.status-val { color: #c9973a; font-size: 14px; font-weight: 600; }
+
+/* PROGRESS */
+#progress-wrap {
+  background: rgba(20,10,15,0.85);
+  border: 1px solid #2a1520;
+  border-radius: 8px; padding: 12px 16px;
+  margin-bottom: 14px;
+}
+
+#progress-wrap h3 {
+  font-family: 'Cinzel', serif; font-size: 10px;
+  color: #5a4030; letter-spacing: 2px; margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 5px; background: #12080e;
+  border-radius: 3px; overflow: hidden; margin-bottom: 6px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7a3020, #c9973a, #ffd280);
+  border-radius: 3px; transition: width 0.7s ease;
+}
+
+#prog-text { font-size: 12px; color: #6a5040; font-style: italic; }
+
+/* WORLD TABS */
+#world-tabs {
+  display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
+}
+
+.world-tab {
+  flex: 1; min-width: 100px;
+  padding: 8px 10px; text-align: center;
+  background: rgba(15,8,12,0.9);
+  border: 1px solid #2a1520;
+  border-radius: 7px; cursor: pointer;
+  font-family: 'Cinzel', serif; font-size: 10px;
+  color: #4a3030; letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.world-tab:hover:not(.locked-tab) { border-color: #6a4020; color: #9a7050; }
+.world-tab.active-tab { border-color: #c9973a; color: #c9973a; background: rgba(201,151,58,0.08); }
+.world-tab.done-tab { border-color: #2d5e30; color: #4a8e4e; }
+.world-tab.locked-tab { opacity: 0.35; cursor: not-allowed; }
+.world-tab .tab-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+
+/* LEVEL GRID */
+#level-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px; margin-bottom: 14px;
+}
+
+.lvl-btn {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid #2a1520;
+  background: rgba(15,8,12,0.9);
+  color: #4a3030;
+  font-family: 'Cinzel', serif; font-size: 11px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  position: relative;
+}
+
+.lvl-btn .lvl-icon { font-size: 16px; }
+.lvl-btn .lvl-num { font-size: 9px; color: #3a2020; }
+
+.lvl-btn:hover:not(.lvl-locked):not(.lvl-done) {
+  border-color: #c9973a; color: #c9973a;
+  background: rgba(201,151,58,0.08);
+  transform: translateY(-2px);
+}
+
+.lvl-btn.lvl-active { border-color: #c9973a; background: rgba(201,151,58,0.12); color: #c9973a; }
+.lvl-btn.lvl-done { border-color: #2d5e30; background: rgba(45,94,48,0.12); cursor: default; }
+.lvl-btn.lvl-done .lvl-num { color: #4a8e4e; }
+.lvl-btn.lvl-locked { opacity: 0.3; cursor: not-allowed; }
+
+.lvl-check {
+  position: absolute; top: 3px; right: 4px;
+  font-size: 9px; color: #4a8e4e;
+}
+
+/* MAIN PANEL */
+#main-panel {
+  background: rgba(10,5,12,0.97);
+  border: 1px solid #2a1520;
+  border-radius: 10px; padding: 24px;
+  min-height: 300px;
+}
+
+.panel-title {
+  font-family: 'Cinzel', serif; font-size: 15px;
+  color: #c9973a; margin-bottom: 6px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.panel-subtitle {
+  font-size: 11px; color: #4a3030;
+  font-family: 'Cinzel', serif; letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.panel-desc {
+  font-size: 13px; color: #8a7050;
+  line-height: 1.75; margin-bottom: 18px;
+  font-style: italic;
+}
+
+.puzzle-box {
+  background: rgba(201,151,58,0.05);
+  border: 1px solid #3a2010; border-radius: 8px;
+  padding: 16px; margin-bottom: 14px;
+}
+
+.puzzle-label {
+  font-family: 'Cinzel', serif; font-size: 9px;
+  color: #5a4030; letter-spacing: 2px; margin-bottom: 10px;
+}
+
+.riddle-text {
+  font-size: 14px; color: #e8d5b0;
+  line-height: 1.85; font-style: italic;
+}
+
+/* RIDDLE INPUT */
+.answer-input {
+  width: 100%;
+  background: rgba(15,8,12,0.8);
+  border: 1px solid #2a1520; border-radius: 6px;
+  padding: 10px 14px; color: #e8d5b0;
+  font-family: 'Lora', serif; font-size: 14px;
+  outline: none; transition: border-color 0.2s;
+}
+
+.answer-input:focus { border-color: #c9973a; }
+
+/* BUTTONS */
+.btn {
+  background: transparent;
+  border: 1px solid #c9973a; border-radius: 6px;
+  color: #c9973a; font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 1px;
+  padding: 8px 18px; cursor: pointer;
+  transition: all 0.2s; margin-top: 10px;
+}
+
+.btn:hover { background: rgba(201,151,58,0.15); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-danger { border-color: #7e2020; color: #b04040; }
+.btn-success { border-color: #2d5e30; color: #4a8e4e; }
+.btn-back { border-color: #2a1520; color: #3a2020; }
+
+/* FEEDBACK */
+.feedback {
+  padding: 9px 13px; border-radius: 6px;
+  font-size: 12px; margin-top: 10px;
+  animation: popIn 0.3s ease;
+}
+
+@keyframes popIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.feedback.error { background: rgba(120,30,30,0.15); border: 1px solid #7e2020; color: #c05050; }
+.feedback.success { background: rgba(35,90,38,0.15); border: 1px solid #2d5e30; color: #4a9e4e; }
+
+/* PATTERN */
+.pattern-sequence { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+
+.seq-item {
+  width: 34px; height: 34px; border-radius: 6px;
+  border: 1px solid #2a1520;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; background: rgba(201,151,58,0.07);
+  transition: all 0.2s;
+}
+
+.seq-item.correct { border-color: #2d5e30; background: rgba(45,94,48,0.15); }
+.seq-item.wrong { border-color: #7e2020; background: rgba(120,30,30,0.15); }
+
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px; margin: 10px 0;
+}
+
+.pattern-cell {
+  aspect-ratio: 1; border-radius: 6px;
+  border: 1px solid #2a1520; cursor: pointer;
+  transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; user-select: none;
+  background: rgba(201,151,58,0.05);
+}
+
+.pattern-cell:hover { background: rgba(201,151,58,0.18); border-color: #c9973a; }
+
+/* MAZE */
+.maze-wrap { overflow-x: auto; }
+.maze-grid { display: flex; flex-direction: column; gap: 2px; margin: 10px 0; }
+.maze-row { display: flex; gap: 2px; }
+
+.maze-cell {
+  width: 30px; height: 30px; border-radius: 3px;
+  border: 1px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; transition: background 0.1s;
+  flex-shrink: 0;
+}
+
+.maze-cell.wall { background: #1e0d14; border-color: #120810; }
+.maze-cell.open { background: rgba(201,151,58,0.06); border-color: #2a1520; }
+.maze-cell.player { background: rgba(80,120,220,0.22); border-color: #5080d0; }
+.maze-cell.goal { background: rgba(201,151,58,0.18); border-color: #c9973a; }
+.maze-cell.trap { background: rgba(120,20,20,0.25); border-color: #7e2020; }
+
+.maze-controls {
+  display: grid; grid-template-columns: repeat(3, 44px);
+  gap: 5px; margin: 12px auto 0; width: fit-content;
+}
+
+.maze-controls .btn { margin-top: 0; padding: 8px 0; font-size: 14px; width: 44px; text-align: center; }
+
+/* WORD UNSCRAMBLE */
+.scramble-word {
+  font-family: 'Cinzel', serif; font-size: 28px;
+  color: #c9973a; letter-spacing: 8px;
+  text-align: center; margin: 16px 0;
+  text-shadow: 0 0 14px rgba(201,151,58,0.3);
+}
+
+/* NUMBER SEQUENCE */
+.num-sequence {
+  display: flex; gap: 10px; align-items: center;
+  flex-wrap: wrap; margin: 12px 0; font-size: 18px;
+  font-family: 'Cinzel', serif; color: #e8d5b0;
+}
+
+.num-box {
+  width: 44px; height: 44px; border-radius: 6px;
+  border: 1px solid #3a2010;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(201,151,58,0.08);
+  font-size: 16px; color: #c9973a;
+}
+
+.num-box.blank {
+  border-color: #c9973a; background: rgba(201,151,58,0.04);
+  color: #4a3020;
+}
+
+/* TRIVIA */
+.trivia-opts { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+
+.trivia-opt {
+  background: rgba(201,151,58,0.05);
+  border: 1px solid #2a1520; border-radius: 6px;
+  padding: 10px 14px; cursor: pointer;
+  font-size: 13px; color: #9a8060;
+  transition: all 0.2s; text-align: left;
+}
+
+.trivia-opt:hover { border-color: #c9973a; color: #e8d5b0; background: rgba(201,151,58,0.1); }
+.trivia-opt.correct-opt { border-color: #2d5e30; background: rgba(45,94,48,0.15); color: #4a9e4e; }
+.trivia-opt.wrong-opt { border-color: #7e2020; background: rgba(120,30,30,0.12); color: #b04040; }
+
+/* SPELL MATCH */
+.spell-pairs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.spell-btn {
+  padding: 10px 8px; border-radius: 6px;
+  border: 1px solid #2a1520; background: rgba(201,151,58,0.05);
+  color: #9a8060; cursor: pointer; font-size: 12px;
+  font-family: 'Cinzel', serif; text-align: center;
+  transition: all 0.2s; letter-spacing: 0.5px;
+}
+.spell-btn:hover:not(.matched):not(.selected) { border-color: #c9973a; color: #c9973a; }
+.spell-btn.selected { border-color: #6080c0; background: rgba(80,100,180,0.15); color: #8090d0; }
+.spell-btn.matched { border-color: #2d5e30; background: rgba(45,94,48,0.15); color: #4a9e4e; cursor: default; }
+.spell-btn.mismatch { border-color: #7e2020; animation: shake 0.4s ease; }
+
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)}
+}
+
+/* INVENTORY */
+#inventory {
+  background: rgba(15,8,12,0.9);
+  border: 1px solid #2a1520; border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 14px;
+}
+
+#inventory h3 {
+  font-family: 'Cinzel', serif; font-size: 9px;
+  color: #5a4030; letter-spacing: 2px; margin-bottom: 8px;
+}
+
+#inv-items { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; }
+
+.inv-item {
+  background: rgba(201,151,58,0.12);
+  border: 1px solid #c9973a; border-radius: 14px;
+  padding: 3px 10px; font-size: 11px;
+  color: #c9973a; font-family: 'Cinzel', serif;
+  animation: popIn 0.4s ease;
+}
+
+.inv-empty { color: #2a1a10; font-style: italic; font-size: 12px; align-self: center; }
+
+/* VICTORY */
+#victory-screen {
+  text-align: center; padding: 40px 20px;
+}
+
+#victory-screen h2 {
+  font-family: 'Cinzel', serif; font-size: 28px;
+  color: #c9973a; margin-bottom: 12px;
+  text-shadow: 0 0 30px rgba(201,151,58,0.7);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { text-shadow: 0 0 10px rgba(201,151,58,0.4); }
+  to { text-shadow: 0 0 40px rgba(201,151,58,0.9); }
+}
+
+#victory-screen p { color: #9a8060; font-style: italic; font-size: 14px; line-height: 1.8; }
+
+.parade { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+
+.parade-item {
+  font-size: 26px;
+  animation: floatBob 2s ease-in-out infinite alternate;
+}
+
+@keyframes floatBob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
+/* HOME */
+#home-screen .welcome {
+  font-size: 14px; color: #7a6040; font-style: italic; line-height: 1.8;
+  margin-bottom: 16px;
+}
+
+.world-desc {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px; margin-top: 12px;
+}
+
+.world-card {
+  background: rgba(201,151,58,0.04);
+  border: 1px solid #2a1520; border-radius: 7px;
+  padding: 12px 10px; text-align: center;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.world-card:hover:not(.w-locked) { border-color: #c9973a; transform: translateY(-2px); }
+.world-card.w-locked { opacity: 0.3; cursor: not-allowed; }
+.world-card .w-icon { font-size: 24px; margin-bottom: 6px; }
+.world-card .w-name { font-family: 'Cinzel', serif; font-size: 10px; color: #c9973a; letter-spacing: 1px; }
+.world-card .w-info { font-size: 10px; color: #4a3030; margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div id="game">
+
+  <div id="header">
+    <h1>⚡ HORCRUX HUNT ⚡</h1>
+    <p>30 Levels across 5 Worlds — Seek and destroy every fragment of the Dark Lord's soul</p>
+  </div>
+
+  <div id="status-bar">
+    <div class="status-item"><span>LEVELS CLEARED</span><span class="status-val" id="stat-done">0/30</span></div>
+    <div class="status-item"><span>CURRENT WORLD</span><span class="status-val" id="stat-world">—</span></div>
+    <div class="status-item"><span>HORCRUXES</span><span class="status-val" id="stat-hc">0/7</span></div>
+    <div class="status-item"><span>TOTAL SCORE</span><span class="status-val" id="stat-score">0</span></div>
+  </div>
+
+  <div id="progress-wrap">
+    <h3>OVERALL QUEST PROGRESS</h3>
+    <div class="progress-bar"><div class="progress-fill" id="main-progress" style="width:0%"></div></div>
+    <span id="prog-text">0 of 30 levels completed</span>
+  </div>
+
+  <div id="inventory">
+    <h3>INVENTORY — HORCRUX FRAGMENTS COLLECTED</h3>
+    <div id="inv-items"><span class="inv-empty">No fragments found yet...</span></div>
+  </div>
+
+  <div id="world-tabs"></div>
+  <div id="level-grid"></div>
+
+  <div id="main-panel">
+    <div id="home-screen">
+      <div class="panel-title">🗺️ &nbsp;The Horcrux Hunt Begins</div>
+      <p class="welcome">Voldemort has hidden seven Horcruxes across five treacherous worlds. Each world holds 6 levels of increasing darkness and difficulty. Master riddles, escape mazes, decode rune patterns, unscramble dark spells, solve magical number sequences, match spells to effects, and answer wizarding world trivia.<br><br>Select a world above or click a level to begin your quest.</p>
+      <div class="world-desc" id="home-worlds"></div>
+    </div>
+    <div id="puzzle-screen" style="display:none"></div>
+    <div id="victory-screen" style="display:none"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  WORLDS & LEVELS DATA
+// ═══════════════════════════════════════════════
+
+const WORLDS = [
+  { name:"Forbidden Forest", icon:"🌲", color:"#3a7040", unlockAt:0 },
+  { name:"Dark Cave",        icon:"🏔️", color:"#3a4070", unlockAt:6 },
+  { name:"Hogwarts Castle",  icon:"🏰", color:"#703a40", unlockAt:12 },
+  { name:"Gringotts Vaults", icon:"🏦", color:"#70603a", unlockAt:18 },
+  { name:"Malfoy Manor",     icon:"🐍", color:"#503a70", unlockAt:24 }
+];
+
+const HORCRUXES = [
+  { name:"Nagini's Fang",        icon:"🐍", world:0 },
+  { name:"Ravenclaw's Diadem",   icon:"👑", world:1 },
+  { name:"Slytherin's Locket",   icon:"🔮", world:1 },
+  { name:"Hufflepuff's Cup",     icon:"🏆", world:2 },
+  { name:"Tom Riddle's Diary",   icon:"📓", world:3 },
+  { name:"Marvolo's Ring",       icon:"💍", world:4 },
+  { name:"Harry (The Boy)",      icon:"⚡", world:4 }
+];
+
+// 30 levels — 6 per world
+const LEVELS = [
+  // ─── WORLD 0: Forbidden Forest (Movie 1 & 2) ─────
+  {
+    world:0, title:"The Whomping Willow", icon:"🌳",
+    desc:"The Whomping Willow thrashes its branches. Answer this question from Harry Potter and the Chamber of Secrets to find the safe path.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Chamber of Secrets', what crashes Ron and Harry's flying Ford Anglia into the Whomping Willow?",
+      options:["A Bludger","The tree itself attacks first","They lose control steering","An Owlery collision"],
+      correct:2
+    }
+  },
+  {
+    world:0, title:"Centaur Glade", icon:"🏹",
+    desc:"The centaurs guard an ancient path. They demand you solve their pattern before letting you pass.",
+    type:"pattern",
+    puzzle:{
+      sequence:["⭐","🌙","⭐","⭐","🌙"],
+      options:["⭐","🌙","☀️","💫"]
+    }
+  },
+  {
+    world:0, title:"Unicorn Clearing", icon:"🦄",
+    desc:"A dead unicorn lies ahead — someone has been drinking its blood. Unscramble the name of the creature Harry saw drinking it in the film.",
+    type:"unscramble",
+    puzzle:{ scrambled:"LRULIRRQ", answer:"QUIRRELL", hint:"He had something on the back of his head..." }
+  },
+  {
+    world:0, title:"Acromantula's Web", icon:"🕷️",
+    desc:"Aragog's children surround you. Solve the number sequence to find the escape route.",
+    type:"sequence",
+    puzzle:{ sequence:[2,4,8,16,"?"], answer:32, hint:"Each number doubles the one before it" }
+  },
+  {
+    world:0, title:"The Dark Thicket", icon:"🌑",
+    desc:"The trees grow darker here. Navigate the labyrinth of thorns to find the hidden path.",
+    type:"maze",
+    puzzle:{ size:5 }
+  },
+  {
+    world:0, title:"Nagini's Lair", icon:"🐍",
+    horcruxReward: 0,
+    desc:"Nagini coils around the Horcrux. Answer this movie question to break the serpent's dark enchantment.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Deathly Hallows Part 1', who does Nagini attack inside Bathilda Bagshot's house?",
+      options:["Ron Weasley","Hermione Granger","Harry Potter","Dobby"],
+      correct:2
+    }
+  },
+
+  // ─── WORLD 1: Dark Cave (Movie 3 & 4) ───────────
+  {
+    world:1, title:"The Inferi Lake", icon:"💧",
+    desc:"Hands reach from the black water. Answer this movie trivia from 'Half-Blood Prince' to keep the Inferi at bay.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Half-Blood Prince', what must Dumbledore do to retrieve the locket Horcrux from the cave basin?",
+      options:["Dive into the water","Drink the entire basin of potion","Speak Parseltongue","Sacrifice blood"],
+      correct:1
+    }
+  },
+  {
+    world:1, title:"The Emerald Potion", icon:"🧪",
+    desc:"Six goblets glow with rune symbols. Memorize the sequence to find which potion is safe to drink.",
+    type:"pattern",
+    puzzle:{
+      sequence:["🔮","⚗️","🔮","🌙","⚗️","🔮"],
+      options:["🔮","⚗️","🌙","💎"]
+    }
+  },
+  {
+    world:1, title:"Stone Passage", icon:"🪨",
+    desc:"Unscramble the name of the spell Harry uses to defend himself against the Dementors in 'Prisoner of Azkaban'.",
+    type:"unscramble",
+    puzzle:{ scrambled:"NOUARPTS", answer:"PATRONUS", hint:"The spell that drives away Dementors — EXPECTO..." }
+  },
+  {
+    world:1, title:"Crystal Chamber", icon:"💎",
+    desc:"Magic crystals pulse in sequence. Find the missing number in the enchanted series.",
+    type:"sequence",
+    puzzle:{ sequence:[3,6,12,24,"?"], answer:48, hint:"Each number is doubled by dark magic" }
+  },
+  {
+    world:1, title:"The Horcrux Basin", icon:"⚫",
+    desc:"The basin glows with dark energy. Navigate the flooded maze without touching cursed water.",
+    type:"maze",
+    puzzle:{ size:6 }
+  },
+  {
+    world:1, title:"Ravenclaw's Diadem", icon:"👑",
+    horcruxReward: 1,
+    desc:"The Diadem floats in the Room of Requirement. Answer this movie question from 'Deathly Hallows Part 2' to claim it.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Deathly Hallows Part 2', how is Ravenclaw's Diadem ultimately destroyed?",
+      options:["Harry stabs it with a Basilisk fang","Ron destroys it with Parseltongue","Fiendfyre conjured by Crabbe melts it","Hermione uses the Sword of Gryffindor"],
+      correct:2
+    }
+  },
+
+  // ─── WORLD 2: Hogwarts Castle (Movie 5 & 6) ─────
+  {
+    world:2, title:"The Moving Staircases", icon:"🪜",
+    desc:"The staircases shift endlessly. Answer this movie question from 'Order of the Phoenix' to find your floor.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Order of the Phoenix', what is the name of the student group Harry secretly forms to teach Defence Against the Dark Arts?",
+      options:["The Secret Keepers","Dumbledore's Army","The Order of Students","The Phoenix Society"],
+      correct:1
+    }
+  },
+  {
+    world:2, title:"The Room of Requirement", icon:"🚪",
+    desc:"The Room shifts between forms. Match the rune pattern it shows to unlock your requirement.",
+    type:"pattern",
+    puzzle:{
+      sequence:["🪄","⚡","🪄","🌟","🪄","⚡","🌟"],
+      options:["🪄","⚡","🌟","🔥"]
+    }
+  },
+  {
+    world:2, title:"Dumbledore's Office", icon:"🦅",
+    desc:"Unscramble the name of Dumbledore's phoenix companion seen throughout the films.",
+    type:"unscramble",
+    puzzle:{ scrambled:"SKAWFE", answer:"FAWKES", hint:"A scarlet and gold phoenix, Dumbledore's loyal companion..." }
+  },
+  {
+    world:2, title:"The Astronomy Tower", icon:"🌠",
+    desc:"Stars align in magical sequence. Find the missing number in the celestial pattern.",
+    type:"sequence",
+    puzzle:{ sequence:[1,1,2,3,5,"?"], answer:8, hint:"Each number is the sum of the two before it — Fibonacci!" }
+  },
+  {
+    world:2, title:"The Forbidden Corridor", icon:"🐕",
+    desc:"Fluffy guards the trapdoor. Navigate the maze while the three-headed dog sleeps.",
+    type:"maze",
+    puzzle:{ size:7 }
+  },
+  {
+    world:2, title:"Hufflepuff's Cup", icon:"🏆",
+    horcruxReward: 3,
+    desc:"The Cup glows with dark magic in Gringotts. Answer this movie question from 'Deathly Hallows Part 2'.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Deathly Hallows Part 2', how do Harry, Ron and Hermione escape Gringotts after stealing Hufflepuff's Cup?",
+      options:["They use Polyjuice Potion to disguise as guards","They ride the half-blind dragon chained in the vaults","They Disapparate from inside the bank","They use an invisibility cloak"],
+      correct:1
+    }
+  },
+
+  // ─── WORLD 3: Gringotts Vaults (Movie 7 Part 1) ─
+  {
+    world:3, title:"Goblin Gates", icon:"🔑",
+    desc:"The goblins demand a movie question answered before granting vault access.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Deathly Hallows Part 1', which of the three Deathly Hallows does Dumbledore leave to Hermione in his will?",
+      options:["The Elder Wand","The Invisibility Cloak","The Tales of Beedle the Bard","The Resurrection Stone"],
+      correct:2
+    }
+  },
+  {
+    world:3, title:"The Underground Railway", icon:"🚂",
+    desc:"The cart speeds through tunnels marked with glowing runes. Match the vault sequence.",
+    type:"pattern",
+    puzzle:{
+      sequence:["🗝️","💰","🗝️","🗝️","💎","🗝️","💰"],
+      options:["🗝️","💰","💎","🏦"]
+    }
+  },
+  {
+    world:3, title:"Lestrange Vault", icon:"🏴",
+    desc:"Unscramble the name of the Death Eater who owned the vault where Hufflepuff's Cup was hidden.",
+    type:"unscramble",
+    puzzle:{ scrambled:"XTLBAIREL", answer:"BELLATRIX", hint:"She tortured the Longbottoms and was Voldemort's most loyal..." }
+  },
+  {
+    world:3, title:"The Dragon's Lair", icon:"🐉",
+    desc:"The blind dragon counts the vault openings. Solve the sequence to sneak past.",
+    type:"sequence",
+    puzzle:{ sequence:[10,20,15,30,25,"?"], answer:50, hint:"+10, −5, +15, −5, +25..." }
+  },
+  {
+    world:3, title:"Vault 713", icon:"📦",
+    desc:"The most secure vault. Navigate the enchanted security maze to reach the inner chamber.",
+    type:"maze",
+    puzzle:{ size:8 }
+  },
+  {
+    world:3, title:"Tom Riddle's Diary", icon:"📓",
+    horcruxReward: 4,
+    desc:"The Diary pulses with Voldemort's memory. Answer this movie question from 'Chamber of Secrets'.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Chamber of Secrets', what does Tom Riddle's diary do when Harry writes in it?",
+      options:["It burns his fingers","It writes back to Harry in ink","It shows a moving image of the past","It transforms into a Horcrux physically"],
+      correct:1
+    }
+  },
+
+  // ─── WORLD 4: Malfoy Manor (Movie 7 Part 2) ─────
+  {
+    world:4, title:"The Iron Gates", icon:"⛩️",
+    desc:"The gates of Malfoy Manor are sealed. Answer this movie question from 'Deathly Hallows Part 1' to enter.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Deathly Hallows Part 1', who saves Harry, Ron and Hermione from Malfoy Manor by Apparating them away?",
+      options:["Dumbledore's ghost","Kreacher the house-elf","Dobby the house-elf","Aberforth Dumbledore"],
+      correct:2
+    }
+  },
+  {
+    world:4, title:"The Trophy Room", icon:"🏅",
+    desc:"Dark trophies glow in sequence. Recreate the pattern to reveal the hidden passage.",
+    type:"pattern",
+    puzzle:{
+      sequence:["💀","🐍","💀","🔮","💀","🐍","🔮","💀"],
+      options:["💀","🐍","🔮","⚡"]
+    }
+  },
+  {
+    world:4, title:"Bellatrix's Chamber", icon:"🗡️",
+    desc:"Unscramble the name of the actress who played Bellatrix Lestrange in the Harry Potter films.",
+    type:"unscramble",
+    puzzle:{ scrambled:"ANELHE", answer:"HELENA", hint:"Helena Bonham Carter played the mad witch..." }
+  },
+  {
+    world:4, title:"The Dark Mark Ritual", icon:"☠️",
+    desc:"The Dark Mark appears in numbers. Find the final number in Voldemort's dark sequence.",
+    type:"sequence",
+    puzzle:{ sequence:[7,14,28,56,"?"], answer:112, hint:"Each is multiplied by 2 — Voldemort's obsession with 7" }
+  },
+  {
+    world:4, title:"The Final Maze", icon:"🌀",
+    desc:"The manor itself shifts and turns. This is the most dangerous labyrinth you've faced. Find the Horcrux.",
+    type:"maze",
+    puzzle:{ size:9 }
+  },
+  {
+    world:4, title:"Marvolo's Ring", icon:"💍",
+    horcruxReward: 5,
+    desc:"The final Horcrux. Answer the ultimate movie question from 'Deathly Hallows Part 2' to destroy the Ring and end Voldemort forever.",
+    type:"trivia",
+    puzzle:{
+      question:"In 'Deathly Hallows Part 2', Harry discovers he is a Horcrux. What must happen for Voldemort to be mortal?",
+      options:["Harry must destroy all other Horcruxes first","Harry must let Voldemort kill him in the forest","Harry must use the Elder Wand against Voldemort","Harry must speak Parseltongue to summon Nagini"],
+      correct:1
+    }
+  }
+];
+
+// ═══════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════
+
+let cleared = new Set();
+let horcruxFound = new Set();
+let score = 0;
+let currentLevel = -1;
+let patternSelected = [];
+let attempts = 0;
+let mazePlayer = {};
+let mazeData = [];
+let spellSelected = null;
+let spellMatched = new Set();
+
+// ═══════════════════════════════════════════════
+//  STARS
+// ═══════════════════════════════════════════════
+
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  s.style.left = Math.random() * 100 + '%';
+  s.style.top = Math.random() * 100 + '%';
+  s.style.animationDelay = Math.random() * 4 + 's';
+  s.style.animationDuration = (2 + Math.random() * 4) + 's';
+  s.style.opacity = Math.random() * 0.5 + 0.1;
+  starsEl.appendChild(s);
+}
+
+// ═══════════════════════════════════════════════
+//  UI BUILDERS
+// ═══════════════════════════════════════════════
+
+function buildTabs() {
+  const tabs = document.getElementById('world-tabs');
+  tabs.innerHTML = WORLDS.map((w, i) => {
+    const done = LEVELS.slice(i*6, i*6+6).every((_,j) => cleared.has(i*6+j));
+    const locked = cleared.size < w.unlockAt;
+    let cls = 'world-tab';
+    if (locked) cls += ' locked-tab';
+    else if (done) cls += ' done-tab';
+    const onclick = locked ? '' : `onclick="selectWorld(${i})"`;
+    return `<div class="${cls}" id="wtab-${i}" ${onclick}>
+      <span class="tab-icon">${w.icon}</span>
+      ${w.name.split(' ')[0]}${done?' ✓':''}
+    </div>`;
+  }).join('');
+}
+
+function buildLevelGrid(worldIdx) {
+  const grid = document.getElementById('level-grid');
+  const start = worldIdx * 6;
+  grid.innerHTML = '';
+  for (let i = start; i < start + 6; i++) {
+    const lv = LEVELS[i];
+    const done = cleared.has(i);
+    const locked = i > 0 && !cleared.has(i - 1) && !done;
+    let cls = 'lvl-btn';
+    if (done) cls += ' lvl-done';
+    else if (locked) cls += ' lvl-locked';
+    const onclick = (!done && !locked) ? `onclick="enterLevel(${i})"` : '';
+    grid.innerHTML += `
+      <div class="${cls}" id="lvl-${i}" title="${lv.title}" ${onclick}>
+        ${done ? '<span class="lvl-check">✓</span>' : ''}
+        <span class="lvl-icon">${lv.icon}</span>
+        <span class="lvl-num">LV ${i+1}</span>
+      </div>`;
+  }
+}
+
+let activeWorld = 0;
+
+function selectWorld(idx) {
+  activeWorld = idx;
+  document.querySelectorAll('.world-tab').forEach((t,i) => {
+    t.classList.toggle('active-tab', i === idx);
+  });
+  buildLevelGrid(idx);
+  document.getElementById('stat-world').textContent = WORLDS[idx].name;
+  showHome();
+}
+
+function showHome() {
+  document.getElementById('home-screen').style.display = 'block';
+  document.getElementById('puzzle-screen').style.display = 'none';
+  document.getElementById('victory-screen').style.display = 'none';
+}
+
+function buildHomeWorlds() {
+  const hw = document.getElementById('home-worlds');
+  hw.innerHTML = WORLDS.map((w, i) => {
+    const done = LEVELS.slice(i*6,i*6+6).every((_,j)=>cleared.has(i*6+j));
+    const locked = cleared.size < w.unlockAt;
+    let cls = 'world-card'; if(locked) cls += ' w-locked';
+    const cleared6 = Array.from({length:6},(_,j)=>cleared.has(i*6+j)).filter(Boolean).length;
+    const onclick = locked ? '' : `onclick="selectWorld(${i})"`;
+    return `<div class="${cls}" ${onclick}>
+      <div class="w-icon">${w.icon}</div>
+      <div class="w-name">${w.name}</div>
+      <div class="w-info">${done?'COMPLETE ✓':locked?'LOCKED 🔒':cleared6+'/6 cleared'}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateStatus() {
+  document.getElementById('stat-done').textContent = cleared.size + '/30';
+  document.getElementById('stat-hc').textContent = horcruxFound.size + '/7';
+  document.getElementById('stat-score').textContent = score;
+  document.getElementById('main-progress').style.width = (cleared.size / 30 * 100) + '%';
+  document.getElementById('prog-text').textContent = cleared.size + ' of 30 levels completed';
+
+  // inventory
+  const inv = document.getElementById('inv-items');
+  if (horcruxFound.size === 0) {
+    inv.innerHTML = '<span class="inv-empty">No fragments found yet...</span>';
+  } else {
+    inv.innerHTML = [...horcruxFound].map(i =>
+      `<span class="inv-item">${HORCRUXES[i].icon} ${HORCRUXES[i].name}</span>`
+    ).join('');
+  }
+
+  buildTabs();
+  buildHomeWorlds();
+  if (activeWorld >= 0) buildLevelGrid(activeWorld);
+}
+
+// ═══════════════════════════════════════════════
+//  LEVEL ENTRY
+// ═══════════════════════════════════════════════
+
+function enterLevel(idx) {
+  currentLevel = idx;
+  attempts = 0;
+  patternSelected = [];
+  spellSelected = null;
+  spellMatched = new Set();
+
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById('puzzle-screen').style.display = 'block';
+  document.getElementById('victory-screen').style.display = 'none';
+
+  const lv = LEVELS[idx];
+  renderLevel(lv, idx);
+}
+
+function renderLevel(lv, idx) {
+  const ps = document.getElementById('puzzle-screen');
+  const worldName = WORLDS[lv.world].name;
+  const typeLabel = {
+    riddle:'Riddle Challenge', pattern:'Rune Pattern', unscramble:'Word Unscramble',
+    sequence:'Number Sequence', maze:'Enchanted Maze', match:'Spell Matching', trivia:'Wizarding Trivia'
+  }[lv.type];
+
+  let html = `
+    <div class="panel-subtitle">WORLD ${lv.world+1}: ${worldName.toUpperCase()} &nbsp;·&nbsp; LEVEL ${idx+1}</div>
+    <div class="panel-title">${lv.icon} &nbsp;${lv.title}</div>
+    <div class="panel-desc">${lv.desc}</div>
+  `;
+
+  if (lv.type === 'riddle') html += buildRiddle(lv.puzzle, idx);
+  else if (lv.type === 'pattern') html += buildPattern(lv.puzzle, idx);
+  else if (lv.type === 'unscramble') html += buildUnscramble(lv.puzzle, idx);
+  else if (lv.type === 'sequence') html += buildSequence(lv.puzzle, idx);
+  else if (lv.type === 'maze') html += buildMaze(lv.puzzle, idx);
+  else if (lv.type === 'match') html += buildMatch(lv.puzzle, idx);
+  else if (lv.type === 'trivia') html += buildTrivia(lv.puzzle, idx);
+
+  html += `<div id="feedback"></div>
+    <br><button class="btn btn-back" onclick="goBack()">← Back to Map</button>`;
+
+  ps.innerHTML = html;
+
+  // Post-render hooks
+  if (lv.type === 'pattern') setTimeout(() => animatePattern(lv.puzzle.sequence), 200);
+  if (lv.type === 'maze') setTimeout(() => renderMazeGrid(), 100);
+}
+
+// ═══════════════════════════════════════════════
+//  PUZZLE BUILDERS
+// ═══════════════════════════════════════════════
+
+function buildRiddle(p, idx) {
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">RIDDLE OF THE DARK ARTS</div>
+    <div class="riddle-text">${p.riddle.replace(/\n/g,'<br>')}</div>
+  </div>
+  <input type="text" class="answer-input" id="riddle-ans" placeholder="Whisper your answer..."
+    onkeydown="if(event.key==='Enter')checkRiddle(${idx})"/>
+  <button class="btn" onclick="checkRiddle(${idx})">Cast Answer ⚡</button>`;
+}
+
+function buildPattern(p, idx) {
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">MEMORIZE THE RUNE SEQUENCE — THEN RECREATE IT</div>
+    <div class="pattern-sequence" id="seq-display">
+      ${p.sequence.map((_,j)=>`<div class="seq-item" id="seq-${j}"></div>`).join('')}
+    </div>
+  </div>
+  <div class="puzzle-box">
+    <div class="puzzle-label">SELECT RUNES IN ORDER</div>
+    <div class="pattern-grid">
+      ${p.options.map(o=>`<div class="pattern-cell" onclick="selectRune('${o}',${idx})">${o}</div>`).join('')}
+    </div>
+  </div>
+  <button class="btn btn-danger" onclick="resetPattern(${idx})" style="margin-right:8px">Clear</button>`;
+}
+
+function buildUnscramble(p, idx) {
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">UNSCRAMBLE THE DARK WORD</div>
+    <div class="scramble-word">${p.scrambled}</div>
+  </div>
+  <input type="text" class="answer-input" id="unscramble-ans" placeholder="Type the correct word..."
+    onkeydown="if(event.key==='Enter')checkUnscramble(${idx})"/>
+  <button class="btn" onclick="checkUnscramble(${idx})">Cast Answer ⚡</button>`;
+}
+
+function buildSequence(p, idx) {
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">COMPLETE THE MAGICAL SEQUENCE</div>
+    <div class="num-sequence">
+      ${p.sequence.map(n=> n==='?'
+        ? `<div class="num-box blank">?</div>`
+        : `<div class="num-box">${n}</div>`
+      ).join('<span style="color:#3a2010">→</span>')}
+    </div>
+  </div>
+  <input type="number" class="answer-input" id="seq-ans" placeholder="Enter the missing number..."
+    onkeydown="if(event.key==='Enter')checkSequence(${idx})"/>
+  <button class="btn" onclick="checkSequence(${idx})">Confirm ⚡</button>`;
+}
+
+function buildMaze(p, idx) {
+  generateMaze(p.size || 7);
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">NAVIGATE THE ENCHANTED LABYRINTH — 🧙 → ✨</div>
+    <div class="maze-wrap"><div class="maze-grid" id="maze-render"></div></div>
+  </div>
+  <div class="maze-controls">
+    <div></div><button class="btn" onclick="moveMaze(-1,0)">↑</button><div></div>
+    <button class="btn" onclick="moveMaze(0,-1)">←</button>
+    <button class="btn" onclick="moveMaze(1,0)">↓</button>
+    <button class="btn" onclick="moveMaze(0,1)">→</button>
+  </div>`;
+}
+
+function buildMatch(p, idx) {
+  const shuffled = [...p.pairs].sort(()=>Math.random()-0.5);
+  const left = shuffled.map(pr=>pr[0]);
+  const right = [...shuffled.map(pr=>pr[1])].sort(()=>Math.random()-0.5);
+  window._matchPairs = p.pairs;
+  window._matchLeft = left;
+  window._matchRight = right;
+  window._matchSel = {left:null,right:null};
+  window._matchDone = new Set();
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">MATCH EACH SPELL TO ITS EFFECT</div>
+    <div class="spell-pairs">
+      <div>${left.map((s,i)=>`<button class="spell-btn" id="ml-${i}" onclick="selectSpell('left',${i})">${s}</button>`).join('')}</div>
+      <div>${right.map((s,i)=>`<button class="spell-btn" id="mr-${i}" onclick="selectSpell('right',${i})">${s}</button>`).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function buildTrivia(p, idx) {
+  return `<div class="puzzle-box">
+    <div class="puzzle-label">🎬 HARRY POTTER MOVIE QUIZ</div>
+    <div class="riddle-text" style="font-style:normal;font-size:15px;margin-bottom:4px">${p.question}</div>
+    <div class="trivia-opts">
+      ${p.options.map((o,i)=>`<button class="trivia-opt" id="topt-${i}" onclick="checkTrivia(${idx},${i})"><span style="color:#5a4030;margin-right:8px;font-family:'Cinzel',serif">${String.fromCharCode(65+i)}.</span>${o}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  PUZZLE LOGIC
+// ═══════════════════════════════════════════════
+
+// RIDDLE
+function checkRiddle(idx) {
+  const inp = document.getElementById('riddle-ans');
+  const val = inp.value.trim().toLowerCase();
+  const p = LEVELS[idx].puzzle;
+  if (p.answers.some(a => val === a || val.includes(a) || a.includes(val) && val.length > 2)) {
+    winLevel(idx);
+  } else {
+    attempts++;
+    const hint = attempts >= 2 ? `<br><em>Hint: ${p.hint}</em>` : '';
+    feedback(`The enchantment holds — "${inp.value}" is not the answer.${hint}`, 'error');
+    inp.value = '';
+  }
+}
+
+// PATTERN
+function animatePattern(seq) {
+  seq.forEach((s,i) => {
+    setTimeout(() => {
+      const el = document.getElementById('seq-'+i);
+      if (el) el.textContent = s;
+    }, i * 550);
+  });
+}
+
+function selectRune(rune, idx) {
+  const seq = LEVELS[idx].puzzle.sequence;
+  patternSelected.push(rune);
+  const i = patternSelected.length - 1;
+  const el = document.getElementById('seq-'+i);
+  if (el) { el.textContent = rune; el.classList.add(rune===seq[i]?'correct':'wrong'); }
+  if (patternSelected.length === seq.length) {
+    if (patternSelected.every((r,j) => r === seq[j])) winLevel(idx);
+    else {
+      feedback('Wrong sequence — clear and try again.', 'error');
+      setTimeout(() => resetPattern(idx), 1400);
+    }
+  }
+}
+
+function resetPattern(idx) {
+  patternSelected = [];
+  const seq = LEVELS[idx].puzzle.sequence;
+  seq.forEach((_,i) => {
+    const el = document.getElementById('seq-'+i);
+    if (el) { el.textContent=''; el.className='seq-item'; }
+  });
+  const fb = document.getElementById('feedback');
+  if (fb) fb.innerHTML = '';
+}
+
+// UNSCRAMBLE
+function checkUnscramble(idx) {
+  const inp = document.getElementById('unscramble-ans');
+  const val = inp.value.trim().toUpperCase();
+  const p = LEVELS[idx].puzzle;
+  if (val === p.answer.toUpperCase()) winLevel(idx);
+  else {
+    attempts++;
+    const hint = attempts >= 2 ? `<br><em>Hint: ${p.hint}</em>` : '';
+    feedback(`"${inp.value}" is not the right word.${hint}`, 'error');
+    inp.value = '';
+  }
+}
+
+// SEQUENCE
+function checkSequence(idx) {
+  const inp = document.getElementById('seq-ans');
+  const val = parseInt(inp.value);
+  const p = LEVELS[idx].puzzle;
+  if (val === p.answer) winLevel(idx);
+  else {
+    attempts++;
+    const hint = attempts >= 2 ? `<br><em>Hint: ${p.hint}</em>` : '';
+    feedback(`${val} is not correct.${hint}`, 'error');
+    inp.value = '';
+  }
+}
+
+// TRIVIA
+function checkTrivia(idx, choice) {
+  const p = LEVELS[idx].puzzle;
+  const opts = document.querySelectorAll('.trivia-opt');
+  opts.forEach(o => o.style.pointerEvents = 'none');
+  if (choice === p.correct) {
+    opts[choice].classList.add('correct-opt');
+    setTimeout(() => winLevel(idx), 700);
+  } else {
+    opts[choice].classList.add('wrong-opt');
+    opts[p.correct].classList.add('correct-opt');
+    feedback('Incorrect! The right answer is shown in green.', 'error');
+  }
+}
+
+// SPELL MATCH
+function selectSpell(side, i) {
+  const sel = window._matchSel;
+  const done = window._matchDone;
+  const btn = document.getElementById(side==='left'?`ml-${i}`:`mr-${i}`);
+  if (btn.classList.contains('matched')) return;
+
+  // Clear previous selection on same side
+  if (sel[side] !== null) {
+    const prev = document.getElementById(side==='left'?`ml-${sel[side]}`:`mr-${sel[side]}`);
+    if (prev && !prev.classList.contains('matched')) prev.classList.remove('selected');
+  }
+
+  sel[side] = i;
+  btn.classList.add('selected');
+
+  if (sel.left !== null && sel.right !== null) {
+    const leftSpell = window._matchLeft[sel.left];
+    const rightEffect = window._matchRight[sel.right];
+    const isMatch = window._matchPairs.some(p => p[0]===leftSpell && p[1]===rightEffect);
+
+    if (isMatch) {
+      document.getElementById(`ml-${sel.left}`).classList.replace('selected','matched');
+      document.getElementById(`mr-${sel.right}`).classList.replace('selected','matched');
+      done.add(leftSpell);
+      sel.left = null; sel.right = null;
+      if (done.size === window._matchPairs.length) setTimeout(() => winLevel(currentLevel), 500);
+    } else {
+      document.getElementById(`ml-${sel.left}`).classList.add('mismatch');
+      document.getElementById(`mr-${sel.right}`).classList.add('mismatch');
+      setTimeout(() => {
+        document.getElementById(`ml-${sel.left}`)?.classList.remove('selected','mismatch');
+        document.getElementById(`mr-${sel.right}`)?.classList.remove('selected','mismatch');
+        sel.left = null; sel.right = null;
+      }, 700);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  MAZE ENGINE
+// ═══════════════════════════════════════════════
+
+function generateMaze(size) {
+  const S = size % 2 === 0 ? size + 1 : size;
+  mazeData = Array.from({length:S}, () => Array(S).fill(1));
+  const stack = [];
+  const start = {r:1,c:1};
+  mazeData[1][1] = 0;
+  stack.push(start);
+
+  while (stack.length) {
+    const cur = stack[stack.length-1];
+    const dirs = [{r:-2,c:0},{r:2,c:0},{r:0,c:-2},{r:0,c:2}]
+      .filter(d => {
+        const nr=cur.r+d.r, nc=cur.c+d.c;
+        return nr>0&&nr<S-1&&nc>0&&nc<S-1&&mazeData[nr][nc]===1;
+      })
+      .sort(()=>Math.random()-0.5);
+    if (dirs.length) {
+      const d = dirs[0];
+      mazeData[cur.r+d.r/2][cur.c+d.c/2] = 0;
+      mazeData[cur.r+d.r][cur.c+d.c] = 0;
+      stack.push({r:cur.r+d.r,c:cur.c+d.c});
+    } else stack.pop();
+  }
+
+  mazePlayer = {r:1,c:1};
+  // place goal at bottom-right open cell
+  for(let r=S-2;r>0;r--) {
+    for(let c=S-2;c>0;c--) {
+      if(mazeData[r][c]===0) { window._mazeGoal={r,c}; r=0; break; }
+    }
+  }
+}
+
+function renderMazeGrid() {
+  const el = document.getElementById('maze-render');
+  if (!el) return;
+  const goal = window._mazeGoal;
+  el.innerHTML = mazeData.map((row,r) =>
+    `<div class="maze-row">${row.map((cell,c) => {
+      const isP = r===mazePlayer.r && c===mazePlayer.c;
+      const isG = r===goal.r && c===goal.c;
+      let cls = 'maze-cell ';
+      if (cell===1) cls += 'wall';
+      else if (isP) cls += 'player';
+      else if (isG) cls += 'goal';
+      else cls += 'open';
+      return `<div class="${cls}">${isP?'🧙':isG?'✨':''}</div>`;
+    }).join('')}</div>`
+  ).join('');
+}
+
+function moveMaze(dr, dc) {
+  const nr=mazePlayer.r+dr, nc=mazePlayer.c+dc;
+  if(nr<0||nr>=mazeData.length||nc<0||nc>=mazeData[0].length) return;
+  if(mazeData[nr][nc]===1){ feedback('A wall blocks your path!','error'); return; }
+  mazePlayer={r:nr,c:nc};
+  renderMazeGrid();
+  const goal=window._mazeGoal;
+  if(nr===goal.r&&nc===goal.c) winLevel(currentLevel);
+}
+
+// ═══════════════════════════════════════════════
+//  WIN / FEEDBACK
+// ═══════════════════════════════════════════════
+
+function winLevel(idx) {
+  if (cleared.has(idx)) return;
+  cleared.add(idx);
+  score += 100 + (idx * 10);
+
+  const lv = LEVELS[idx];
+  if (lv.horcruxReward !== undefined) horcruxFound.add(lv.horcruxReward);
+
+  feedback(`✨ Level ${idx+1} complete! +${100+idx*10} pts`, 'success');
+  updateStatus();
+
+  setTimeout(() => {
+    if (cleared.size === 30) showVictory();
+    else goBack();
+  }, 1800);
+}
+
+function feedback(msg, type) {
+  const fb = document.getElementById('feedback');
+  if (fb) fb.innerHTML = `<div class="feedback ${type}">${msg}</div>`;
+}
+
+function goBack() {
+  showHome();
+  updateStatus();
+}
+
+// ═══════════════════════════════════════════════
+//  VICTORY
+// ═══════════════════════════════════════════════
+
+function showVictory() {
+  document.getElementById('home-screen').style.display = 'none';
+  document.getElementById('puzzle-screen').style.display = 'none';
+  document.getElementById('victory-screen').style.display = 'block';
+  document.getElementById('victory-screen').innerHTML = `
+    <h2>⚡ VOLDEMORT IS VANQUISHED ⚡</h2>
+    <div class="parade">
+      ${HORCRUXES.map(h=>`<span class="parade-item">${h.icon}</span>`).join('')}
+    </div>
+    <p>You conquered all <strong>30 levels</strong> across 5 worlds of darkness.<br>
+    Every Horcrux has been found and destroyed.<br><br>
+    <em>The Dark Lord is mortal. The Boy Who Lived has won.</em><br><br>
+    <strong style="color:#c9973a;font-family:'Cinzel',serif">FINAL SCORE: ${score.toLocaleString()} pts</strong></p>
+    <button class="btn btn-success" onclick="restartGame()" style="margin-top:24px">Play Again ↺</button>
+  `;
+}
+
+function restartGame() {
+  cleared = new Set();
+  horcruxFound = new Set();
+  score = 0;
+  currentLevel = -1;
+  activeWorld = 0;
+  updateStatus();
+  selectWorld(0);
+  document.getElementById('victory-screen').style.display = 'none';
+  showHome();
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+
+updateStatus();
+selectWorld(0);
+</script>
+</body>
+</html>
